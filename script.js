@@ -6,8 +6,10 @@ function checkPasswordInAllChunks(password) {
     const files = ['part1.txt', 'part2.txt', 'part3.txt', 'part4.txt', 'part5.txt', 'part6.txt', 'part7.txt'];
     let found = false;
 
-    // Reset the warning message
+    // Reset the warning message and strength bar when input starts
     document.getElementById('common-password-warning').textContent = '';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('feedback').textContent = '';
 
     // Promise chain to go through all files and check the password
     files.reduce((promiseChain, file) => {
@@ -23,7 +25,12 @@ function checkPasswordInAllChunks(password) {
                     // Check if the entered password is in the list
                     if (commonPasswords.includes(password)) {
                         found = true;
+                        // Set message and progress bar for weak password
                         document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
+                        document.getElementById('feedback').textContent = 'Weak password';
+                        document.getElementById('feedback').className = 'weak';
+                        document.getElementById('progress-bar').style.width = '25%';
+                        document.getElementById('progress-bar').style.backgroundColor = 'red';
                     }
                 })
                 .catch(error => console.error('Error loading dictionary file:', error));
@@ -38,35 +45,37 @@ document.getElementById('password').addEventListener('input', function () {
     // Check if the password is common in any chunk
     checkPasswordInAllChunks(password);
 
-    // Password strength logic (as before)
+    // Password strength logic if password is not found in the database
     let feedback = document.getElementById('feedback');
     let progressBar = document.getElementById('progress-bar');
     let crackTime = document.getElementById('crack-time');
     let strength = 0;
 
-    // Check password criteria
+    // Check password criteria if not marked as weak from database check
     if (password.length >= 8) strength++;
     if (/\d/.test(password)) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
-    // Set strength feedback
-    if (strength <= 2) {
-        feedback.textContent = 'Weak password';
-        feedback.className = 'weak';
-        progressBar.style.width = '25%';
-        progressBar.style.backgroundColor = 'red';
-    } else if (strength === 3 || strength === 4) {
-        feedback.textContent = 'Moderate password';
-        feedback.className = 'moderate';
-        progressBar.style.width = '50%';
-        progressBar.style.backgroundColor = 'orange';
-    } else {
-        feedback.textContent = 'Strong password';
-        feedback.className = 'strong';
-        progressBar.style.width = '100%';
-        progressBar.style.backgroundColor = 'green';
+    // If password was not found in common database, apply normal strength checks
+    if (document.getElementById('common-password-warning').textContent === '') {
+        if (strength <= 2) {
+            feedback.textContent = 'Weak password';
+            feedback.className = 'weak';
+            progressBar.style.width = '25%';
+            progressBar.style.backgroundColor = 'red';
+        } else if (strength === 3 || strength === 4) {
+            feedback.textContent = 'Moderate password';
+            feedback.className = 'moderate';
+            progressBar.style.width = '50%';
+            progressBar.style.backgroundColor = 'orange';
+        } else {
+            feedback.textContent = 'Strong password';
+            feedback.className = 'strong';
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = 'green';
+        }
     }
 
     // Estimate time to crack based on strength
