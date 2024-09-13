@@ -1,44 +1,57 @@
-// Dictionary of common weak passwords
-const commonPasswords = ["123456", "password", "123456789", "qwerty", "12345678", "abc123", "password1"];
+let commonPasswords = [];
 
-// Time to crack for various strengths (in seconds)
-const crackTimes = {
-    0: "Instantly",
-    1: "A few seconds",
-    2: "Minutes",
-    3: "Hours",
-    4: "Days",
-    5: "Years",
-    6: "Centuries"
-};
+// Fetch all the parts of the common password file
+function checkPasswordInAllChunks(password) {
+    // Array of file names for each part
+    const files = ['part1.txt', 'part2.txt', 'part3.txt', 'part4.txt', 'part5.txt', 'part6.txt', 'part7.txt'];
+    let found = false;
+
+    // Reset the warning message
+    document.getElementById('common-password-warning').textContent = '';
+
+    // Go through each part and check if the password is in it
+    files.reduce((promiseChain, file) => {
+        return promiseChain.then(() => {
+            if (found) return; // If password found, stop checking further files
+
+            return fetch(file)
+                .then(response => response.text())
+                .then(data => {
+                    // Split the file contents into an array
+                    commonPasswords = data.split('\n').map(line => line.trim());
+                    
+                    // Check if the entered password is in the list
+                    if (commonPasswords.includes(password)) {
+                        found = true;
+                        document.getElementById('common-password-warning').textContent = 'This password is too common and weak!';
+                    }
+                })
+                .catch(error => console.error('Error loading dictionary file:', error));
+        });
+    }, Promise.resolve());
+}
 
 // Add event listener for password input
-document.getElementById('password').addEventListener('input', function() {
+document.getElementById('password').addEventListener('input', function () {
     let password = this.value;
+
+    // Check if the password is common in any chunk
+    checkPasswordInAllChunks(password);
+
+    // Password strength logic (as before)
     let feedback = document.getElementById('feedback');
     let progressBar = document.getElementById('progress-bar');
     let crackTime = document.getElementById('crack-time');
-    let commonPasswordWarning = document.getElementById('common-password-warning');
-
-    // Password strength checking criteria
     let strength = 0;
 
-    // Check length
+    // Check password criteria
     if (password.length >= 8) strength++;
-
-    // Check for digits
     if (/\d/.test(password)) strength++;
-
-    // Check for lowercase letters
     if (/[a-z]/.test(password)) strength++;
-
-    // Check for uppercase letters
     if (/[A-Z]/.test(password)) strength++;
-
-    // Check for special characters
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
-    // Progress bar and feedback text
+    // Set strength feedback
     if (strength <= 2) {
         feedback.textContent = 'Weak password';
         feedback.className = 'weak';
@@ -57,27 +70,16 @@ document.getElementById('password').addEventListener('input', function() {
     }
 
     // Estimate time to crack based on strength
-    crackTime.textContent = "Estimated time to crack: " + crackTimes[strength];
-
-    // Dictionary attack prevention (Check against common passwords)
-    if (commonPasswords.includes(password)) {
-        commonPasswordWarning.textContent = 'This password is too common and weak!';
-        progressBar.style.width = '10%';
-        progressBar.style.backgroundColor = 'red';
-        feedback.textContent = 'Very Weak password';
-        feedback.className = 'weak';
-        crackTime.textContent = "Estimated time to crack: Instantly";
-    } else {
-        commonPasswordWarning.textContent = '';
-    }
+    const crackTimes = { 0: "Instantly", 1: "A few seconds", 2: "Minutes", 3: "Hours", 4: "Days", 5: "Years", 6: "Centuries" };
+    crackTime.textContent = `Estimated time to crack: ${crackTimes[strength]}`;
 });
 
 // Toggle password visibility
-document.getElementById('toggle-password').addEventListener('change', function() {
+document.getElementById('toggle-password').addEventListener('change', function () {
     let passwordInput = document.getElementById('password');
     if (this.checked) {
-        passwordInput.type = 'text';
+        passwordInput.setAttribute('type', 'text');
     } else {
-        passwordInput.type = 'password';
+        passwordInput.setAttribute('type', 'password');
     }
 });
