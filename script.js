@@ -12,16 +12,21 @@ function checkPasswordInAllChunks(password) {
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('feedback').textContent = '';
 
-    // Promise chain to go through all files and check the password
+    // Function to process each file and check for the password
     files.reduce((promiseChain, file) => {
         return promiseChain.then(() => {
             if (found) return; // If password found, stop checking further files
 
             return fetch(file)
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${file}`);
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    // Split the file contents into an array
-                    commonPasswords = data.split('\n').map(line => line.trim());
+                    // Split the file contents into an array and filter out empty lines
+                    commonPasswords = data.split('\n').map(line => line.trim()).filter(line => line);
 
                     // Check if the entered password is in the list
                     if (commonPasswords.includes(password)) {
@@ -33,7 +38,7 @@ function checkPasswordInAllChunks(password) {
                         document.getElementById('progress-bar').style.width = '25%';
                         document.getElementById('progress-bar').style.backgroundColor = 'red';
 
-                        // Check initial time to crack and adjust accordingly
+                        // Adjust time to crack if found
                         if (originalTimeToCrack === 'Instantly' || originalTimeToCrack === 'A few seconds') {
                             document.getElementById('crack-time').textContent = 'Estimated time to crack: A few seconds';
                         } else {
