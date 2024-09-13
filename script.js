@@ -1,6 +1,6 @@
 let commonPasswords = [];
 
-// Fetch all the parts of the common password file
+// Function to fetch all the parts of the common password file and check if the password exists
 function checkPasswordInAllChunks(password) {
     // Array of file names for each part
     const files = ['part1.txt', 'part2.txt', 'part3.txt', 'part4.txt', 'part5.txt', 'part6.txt', 'part7.txt'];
@@ -9,7 +9,7 @@ function checkPasswordInAllChunks(password) {
     // Reset the warning message
     document.getElementById('common-password-warning').textContent = '';
 
-    // Go through each part and check if the password is in it
+    // Promise chain to go through all files and check the password
     files.reduce((promiseChain, file) => {
         return promiseChain.then(() => {
             if (found) return; // If password found, stop checking further files
@@ -19,11 +19,11 @@ function checkPasswordInAllChunks(password) {
                 .then(data => {
                     // Split the file contents into an array
                     commonPasswords = data.split('\n').map(line => line.trim());
-                    
+
                     // Check if the entered password is in the list
                     if (commonPasswords.includes(password)) {
                         found = true;
-                        document.getElementById('common-password-warning').textContent = 'This password is too common and weak!';
+                        document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
                     }
                 })
                 .catch(error => console.error('Error loading dictionary file:', error));
