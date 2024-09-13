@@ -1,49 +1,48 @@
 let commonPasswords = [];
 
-// Function to fetch all the parts of the common password file and check if the password exists
-function checkPasswordInAllChunks(password) {
-    // Array of file names for each part
+// Function to fetch all parts of the common password file and check if the password exists
+async function checkPasswordInAllChunks(password) {
     const files = ['part1.txt', 'part2.txt', 'part3.txt', 'part4.txt', 'part5.txt', 'part6.txt', 'part7.txt'];
     let found = false;
 
-    // Reset the warning message and strength bar when input starts
+    // Reset the warning message and progress bar
     document.getElementById('common-password-warning').textContent = '';
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('feedback').textContent = '';
 
-    // Promise chain to go through all files and check the password
-    files.reduce((promiseChain, file) => {
-        return promiseChain.then(() => {
-            if (found) return; // If password found, stop checking further files
+    for (const file of files) {
+        if (found) break; // Stop checking further files if password is found
 
-            return fetch(file)
-                .then(response => response.text())
-                .then(data => {
-                    // Split the file contents into an array
-                    commonPasswords = data.split('\n').map(line => line.trim());
+        try {
+            const response = await fetch(file);
+            const data = await response.text();
 
-                    // Check if the entered password is in the list
-                    if (commonPasswords.includes(password)) {
-                        found = true;
-                        // Set message and progress bar for weak password
-                        document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
-                        document.getElementById('feedback').textContent = 'Weak password';
-                        document.getElementById('feedback').className = 'weak';
-                        document.getElementById('progress-bar').style.width = '25%';
-                        document.getElementById('progress-bar').style.backgroundColor = 'red';
-                    }
-                })
-                .catch(error => console.error('Error loading dictionary file:', error));
-        });
-    }, Promise.resolve());
+            // Split the file contents into an array and remove empty lines
+            commonPasswords = data.split('\n').map(line => line.trim()).filter(line => line);
+
+            // Check if the password exists in this chunk
+            if (commonPasswords.includes(password)) {
+                found = true;
+                document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
+                document.getElementById('feedback').textContent = 'Weak password';
+                document.getElementById('feedback').className = 'weak';
+                document.getElementById('progress-bar').style.width = '25%';
+                document.getElementById('progress-bar').style.backgroundColor = 'red';
+            }
+        } catch (error) {
+            console.error(`Error fetching ${file}:`, error);
+        }
+    }
+
+    return found;
 }
 
-// Add event listener for password input
-document.getElementById('password').addEventListener('input', function () {
-    let password = this.value;
+// Main function to check password strength
+document.getElementById('password').addEventListener('input', async function () {
+    const password = this.value;
 
     // Check if the password is common in any chunk
-    checkPasswordInAllChunks(password);
+    const foundInDictionary = await checkPasswordInAllChunks(password);
 
     // Password strength logic if password is not found in the database
     let feedback = document.getElementById('feedback');
@@ -51,15 +50,16 @@ document.getElementById('password').addEventListener('input', function () {
     let crackTime = document.getElementById('crack-time');
     let strength = 0;
 
-    // Check password criteria if not marked as weak from database check
-    if (password.length >= 8) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
+    // If the password was found in the common database, skip the strength calculation
+    if (!foundInDictionary) {
+        // Calculate the password strength
+        if (password.length >= 8) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
-    // If password was not found in common database, apply normal strength checks
-    if (document.getElementById('common-password-warning').textContent === '') {
+        // Adjust the feedback based on password strength
         if (strength <= 2) {
             feedback.textContent = 'Weak password';
             feedback.className = 'weak';
@@ -76,11 +76,14 @@ document.getElementById('password').addEventListener('input', function () {
             progressBar.style.width = '100%';
             progressBar.style.backgroundColor = 'green';
         }
-    }
 
-    // Estimate time to crack based on strength
-    const crackTimes = { 0: "Instantly", 1: "A few seconds", 2: "Minutes", 3: "Hours", 4: "Days", 5: "Years", 6: "Centuries" };
-    crackTime.textContent = `Estimated time to crack: ${crackTimes[strength]}`;
+        // Estimate time to crack based on strength
+        const crackTimes = { 0: "Instantly", 1: "A few seconds", 2: "Minutes", 3: "Hours", 4: "Days", 5: "Years", 6: "Centuries" };
+        crackTime.textContent = `Estimated time to crack: ${crackTimes[strength]}`;
+    } else {
+        // Set the estimated crack time to "Minutes" if the password exists in the database
+        crackTime.textContent = 'Estimated time to crack: Minutes';
+    }
 });
 
 // Toggle password visibility
