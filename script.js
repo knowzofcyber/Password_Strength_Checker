@@ -26,7 +26,7 @@ function checkPasswordInAllChunks(password) {
                     if (commonPasswords.includes(password)) {
                         found = true;
                         // Set message and progress bar for weak password
-                        document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
+                        document.getElementById('common-password-warning').textContent = 'This password already exists in the database!';
                         document.getElementById('feedback').textContent = 'Weak password';
                         document.getElementById('feedback').className = 'weak';
                         document.getElementById('progress-bar').style.width = '25%';
