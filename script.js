@@ -12,21 +12,16 @@ function checkPasswordInAllChunks(password) {
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('feedback').textContent = '';
 
-    // Function to process each file and check for the password
+    // Promise chain to go through all files and check the password
     files.reduce((promiseChain, file) => {
         return promiseChain.then(() => {
             if (found) return; // If password found, stop checking further files
 
             return fetch(file)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Failed to load ${file}`);
-                    }
-                    return response.text();
-                })
+                .then(response => response.text())
                 .then(data => {
-                    // Split the file contents into an array and filter out empty lines
-                    commonPasswords = data.split('\n').map(line => line.trim()).filter(line => line);
+                    // Split the file contents into an array
+                    commonPasswords = data.split('\n').map(line => line.trim());
 
                     // Check if the entered password is in the list
                     if (commonPasswords.includes(password)) {
@@ -38,10 +33,10 @@ function checkPasswordInAllChunks(password) {
                         document.getElementById('progress-bar').style.width = '25%';
                         document.getElementById('progress-bar').style.backgroundColor = 'red';
 
-                        // Adjust time to crack if found
-                        if (originalTimeToCrack === 'Instantly' || originalTimeToCrack === 'A few seconds') {
+                        // Check initial time to crack and adjust accordingly
+                        if (originalTimeToCrack === 'A few seconds') {
                             document.getElementById('crack-time').textContent = 'Estimated time to crack: A few seconds';
-                        } else {
+                        } else if (originalTimeToCrack === 'Minutes' || originalTimeToCrack === 'Hours' || originalTimeToCrack === 'Years') {
                             document.getElementById('crack-time').textContent = 'Estimated time to crack: Minutes';
                         }
                     }
@@ -69,53 +64,25 @@ document.getElementById('password').addEventListener('input', function () {
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
     // Determine the initial time to crack based on strength
-    const crackTimes = {
-        0: "Instantly",
-        1: "A few seconds",
-        2: "Minutes",
-        3: "Hours",
-        4: "Days",
-        5: "Years",
-        6: "Centuries"
-    };
-
     let timeToCrack = '';
-    if (strength <= 1) {
-        feedback.textContent = 'Very weak password';
-        feedback.className = 'weak';
-        progressBar.style.width = '10%';
-        progressBar.style.backgroundColor = 'red';
-        timeToCrack = crackTimes[0]; // Instantly
-    } else if (strength === 2) {
+    if (strength <= 2) {
         feedback.textContent = 'Weak password';
         feedback.className = 'weak';
         progressBar.style.width = '25%';
         progressBar.style.backgroundColor = 'red';
-        timeToCrack = crackTimes[1]; // A few seconds
-    } else if (strength === 3) {
+        timeToCrack = 'A few seconds';
+    } else if (strength === 3 || strength === 4) {
         feedback.textContent = 'Moderate password';
         feedback.className = 'moderate';
         progressBar.style.width = '50%';
         progressBar.style.backgroundColor = 'orange';
-        timeToCrack = crackTimes[2]; // Minutes
-    } else if (strength === 4) {
-        feedback.textContent = 'Moderate password';
-        feedback.className = 'moderate';
-        progressBar.style.width = '75%';
-        progressBar.style.backgroundColor = 'orange';
-        timeToCrack = crackTimes[3]; // Hours
-    } else if (strength === 5) {
+        timeToCrack = 'Hours';
+    } else {
         feedback.textContent = 'Strong password';
         feedback.className = 'strong';
         progressBar.style.width = '100%';
         progressBar.style.backgroundColor = 'green';
-        timeToCrack = crackTimes[5]; // Years
-    } else {
-        feedback.textContent = 'Very strong password';
-        feedback.className = 'strong';
-        progressBar.style.width = '100%';
-        progressBar.style.backgroundColor = 'green';
-        timeToCrack = crackTimes[6]; // Centuries
+        timeToCrack = 'Years';
     }
 
     // Store the initial time to crack before checking the dictionary
