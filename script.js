@@ -5,6 +5,7 @@ function checkPasswordInAllChunks(password) {
     // Array of file names for each part
     const files = ['part1.txt', 'part2.txt', 'part3.txt', 'part4.txt', 'part5.txt', 'part6.txt', 'part7.txt'];
     let found = false;
+    let originalTimeToCrack = '';
 
     // Reset the warning message and strength bar when input starts
     document.getElementById('common-password-warning').textContent = '';
@@ -25,12 +26,19 @@ function checkPasswordInAllChunks(password) {
                     // Check if the entered password is in the list
                     if (commonPasswords.includes(password)) {
                         found = true;
-                        // Set message and progress bar for weak password
-                        document.getElementById('common-password-warning').textContent = 'This password already exists in the database!';
+                        // Set message, strength, and progress bar for weak password
+                        document.getElementById('common-password-warning').textContent = 'This password exists in the database and is too common!';
                         document.getElementById('feedback').textContent = 'Weak password';
                         document.getElementById('feedback').className = 'weak';
                         document.getElementById('progress-bar').style.width = '25%';
                         document.getElementById('progress-bar').style.backgroundColor = 'red';
+
+                        // Check initial time to crack and adjust accordingly
+                        if (originalTimeToCrack === 'Instantly' || originalTimeToCrack === 'A few seconds') {
+                            document.getElementById('crack-time').textContent = 'Estimated time to crack: A few seconds';
+                        } else {
+                            document.getElementById('crack-time').textContent = 'Estimated time to crack: Minutes';
+                        }
                     }
                 })
                 .catch(error => console.error('Error loading dictionary file:', error));
@@ -41,9 +49,6 @@ function checkPasswordInAllChunks(password) {
 // Add event listener for password input
 document.getElementById('password').addEventListener('input', function () {
     let password = this.value;
-
-    // Check if the password is common in any chunk
-    checkPasswordInAllChunks(password);
 
     // Password strength logic if password is not found in the database
     let feedback = document.getElementById('feedback');
@@ -58,29 +63,62 @@ document.getElementById('password').addEventListener('input', function () {
     if (/[A-Z]/.test(password)) strength++;
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
-    // If password was not found in common database, apply normal strength checks
-    if (document.getElementById('common-password-warning').textContent === '') {
-        if (strength <= 2) {
-            feedback.textContent = 'Weak password';
-            feedback.className = 'weak';
-            progressBar.style.width = '25%';
-            progressBar.style.backgroundColor = 'red';
-        } else if (strength === 3 || strength === 4) {
-            feedback.textContent = 'Moderate password';
-            feedback.className = 'moderate';
-            progressBar.style.width = '50%';
-            progressBar.style.backgroundColor = 'orange';
-        } else {
-            feedback.textContent = 'Strong password';
-            feedback.className = 'strong';
-            progressBar.style.width = '100%';
-            progressBar.style.backgroundColor = 'green';
-        }
+    // Determine the initial time to crack based on strength
+    const crackTimes = {
+        0: "Instantly",
+        1: "A few seconds",
+        2: "Minutes",
+        3: "Hours",
+        4: "Days",
+        5: "Years",
+        6: "Centuries"
+    };
+
+    let timeToCrack = '';
+    if (strength <= 1) {
+        feedback.textContent = 'Very weak password';
+        feedback.className = 'weak';
+        progressBar.style.width = '10%';
+        progressBar.style.backgroundColor = 'red';
+        timeToCrack = crackTimes[0]; // Instantly
+    } else if (strength === 2) {
+        feedback.textContent = 'Weak password';
+        feedback.className = 'weak';
+        progressBar.style.width = '25%';
+        progressBar.style.backgroundColor = 'red';
+        timeToCrack = crackTimes[1]; // A few seconds
+    } else if (strength === 3) {
+        feedback.textContent = 'Moderate password';
+        feedback.className = 'moderate';
+        progressBar.style.width = '50%';
+        progressBar.style.backgroundColor = 'orange';
+        timeToCrack = crackTimes[2]; // Minutes
+    } else if (strength === 4) {
+        feedback.textContent = 'Moderate password';
+        feedback.className = 'moderate';
+        progressBar.style.width = '75%';
+        progressBar.style.backgroundColor = 'orange';
+        timeToCrack = crackTimes[3]; // Hours
+    } else if (strength === 5) {
+        feedback.textContent = 'Strong password';
+        feedback.className = 'strong';
+        progressBar.style.width = '100%';
+        progressBar.style.backgroundColor = 'green';
+        timeToCrack = crackTimes[5]; // Years
+    } else {
+        feedback.textContent = 'Very strong password';
+        feedback.className = 'strong';
+        progressBar.style.width = '100%';
+        progressBar.style.backgroundColor = 'green';
+        timeToCrack = crackTimes[6]; // Centuries
     }
 
-    // Estimate time to crack based on strength
-    const crackTimes = { 0: "Instantly", 1: "A few seconds", 2: "Minutes", 3: "Hours", 4: "Days", 5: "Years", 6: "Centuries" };
-    crackTime.textContent = `Estimated time to crack: ${crackTimes[strength]}`;
+    // Store the initial time to crack before checking the dictionary
+    originalTimeToCrack = timeToCrack;
+    crackTime.textContent = `Estimated time to crack: ${timeToCrack}`;
+
+    // Check if the password is common in any chunk
+    checkPasswordInAllChunks(password);
 });
 
 // Toggle password visibility
